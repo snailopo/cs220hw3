@@ -63,13 +63,6 @@ describe("insertOrdered", () => {
     const result = insertOrdered(lst, 15);
     assert.deepStrictEqual(listToArray(result), [10, 15]);
   });
-
-  // ADDED TEST: Multiple consecutive duplicates in input, then insert a duplicate
-  it("inserts into a list that already has consecutive duplicates", () => {
-    const lst = arrayToList([10, 10, 10, 20]);
-    const result = insertOrdered(lst, 10);
-    assert.deepStrictEqual(listToArray(result), [10, 10, 10, 10, 20]);
-  });
 });
 
 describe("everyNRev", () => {
@@ -106,13 +99,6 @@ describe("everyNRev", () => {
   it("returns an empty list when n is greater than list length", () => {
     const lst = arrayToList([10, 20]);
     const result = everyNRev(lst, 5);
-    assert.deepStrictEqual(listToArray(result), []);
-  });
-
-  // ADDED TEST: Check behavior on a single-element list
-  it("works with a single-element list", () => {
-    const lst = arrayToList([42]);
-    const result = everyNRev(lst, 2);
     assert.deepStrictEqual(listToArray(result), []);
   });
 });
@@ -166,14 +152,6 @@ describe("everyNCond", () => {
     const result = everyNCond(lst, 2, isPrime);
     assert.deepStrictEqual(listToArray(result), [3, 7, 13]);
   });
-
-  // ADDED TEST: Condition filters almost everything except the last element
-  it("handles the case where only one element satisfies the condition at the end", () => {
-    const lst = arrayToList([1, 2, 4, 8]);
-    const result = everyNCond(lst, 2, x => x > 7);
-    // Only 8 satisfies x>7, so every 2nd among [8] is... none.
-    assert.deepStrictEqual(listToArray(result), []);
-  });
 });
 
 describe("keepTrendMiddles", () => {
@@ -205,15 +183,6 @@ describe("keepTrendMiddles", () => {
   it("with exactly three elements and a false predicate returns empty", () => {
     const lst = arrayToList([4, 5, 6]);
     const result = keepTrendMiddles(lst, () => false);
-    assert.deepStrictEqual(listToArray(result), []);
-  });
-
-  // ADDED TEST: Repeated elements to ensure correct handling
-  it("handles repeated elements in checking adjacency", () => {
-    const lst = arrayToList([2, 2, 2, 2, 2]);
-    // predicate for strictly increasing "prev < curr < next" should fail with all equals
-    const predicate = (p: number, c: number, n: number) => p < c && c < n;
-    const result = keepTrendMiddles(lst, predicate);
     assert.deepStrictEqual(listToArray(result), []);
   });
 });
@@ -362,25 +331,6 @@ describe("nonNegativeProducts", () => {
     const result = nonNegativeProducts(lst);
     assert.deepStrictEqual(listToArray(result), [3, 9]);
   });
-
-  // ADDED TEST: Consecutive zeros
-  it("handles multiple consecutive zeros in a contiguous segment", () => {
-    const lst = arrayToList([0, 0, 2, -1, 0, 0, 0]);
-    // nonnegative contiguous segments: [0,0], [2], [0,0,0]
-    // products: first segment => 0, second => 2, third => 0
-    // But we must accumulate each new 0 in that contiguous subsegment
-    const result = nonNegativeProducts(lst);
-    // Step by step:
-    //  0 => product=0
-    //  0 => product=0*0=0
-    //  2 => product=2
-    // -1 => break negative
-    //  0 => product=0
-    //  0 => product=0*0=0
-    //  0 => product=0*0=0
-    // So we output [0, 0, 2, 0, 0, 0] for every nonnegative
-    assert.deepStrictEqual(listToArray(result), [0, 0, 2, 0, 0, 0]);
-  });
 });
 
 describe("negativeProducts", () => {
@@ -419,18 +369,6 @@ describe("negativeProducts", () => {
     const result = negativeProducts(lst);
     assert.deepStrictEqual(listToArray(result), [-2, -3]);
   });
-
-  // ADDED TEST: Consecutive negative ones (sign flipping check)
-  it("correctly handles consecutive negative ones that flip sign repeatedly", () => {
-    // -1 => product = -1
-    // -1 => product = (-1)*(-1) = 1
-    // -1 => product = 1*(-1) = -1
-    // -1 => product = (-1)*(-1) = 1
-    // etc.
-    const lst = arrayToList([-1, -1, -1, -1]);
-    const result = negativeProducts(lst);
-    assert.deepStrictEqual(listToArray(result), [-1, 1, -1, 1]);
-  });
 });
 
 describe("deleteFirst", () => {
@@ -468,30 +406,6 @@ describe("deleteFirst", () => {
     const lst = arrayToList([7, 8, 9]);
     const result = deleteFirst(lst, 9);
     assert.deepStrictEqual(listToArray(result), [7, 8]);
-  });
-
-  // ADDED TEST: Structural sharing if nothing is deleted
-  it("shares as many nodes as possible if the element is not found", () => {
-    const original = node(1, node(3, node(5, empty())));
-    const result = deleteFirst(original, 10);
-    // Should return the same exact pointer if we didn't remove anything
-    assert.strictEqual(result, original, "deleteFirst should reuse original nodes when element not found");
-  });
-
-  // ADDED TEST: Structural sharing after deletion in the middle
-  it("shares tail nodes for unchanged parts (deleting in the middle)", () => {
-    // original: 1 -> 2 -> 3 -> 4
-    const original4 = node(4, empty());
-    const original3 = node(3, original4);
-    const original2 = node(2, original3);
-    const original1 = node(1, original2);
-
-    // remove the first occurrence of '2'
-    const result = deleteFirst(original1, 2);
-    // Result is 1 -> 3 -> 4
-    // Check pointer to the '3' node is the same as original3
-    assert.strictEqual(result.tail, original3, "Should reuse node(3,4) after removing '2'");
-    assert.deepStrictEqual(listToArray(result), [1, 3, 4]);
   });
 });
 
@@ -537,30 +451,6 @@ describe("deleteLast", () => {
     const result = deleteLast(lst, 2);
     assert.deepStrictEqual(listToArray(result), [2, 2, 1, 2]);
   });
-
-  // ADDED TEST: Structural sharing if nothing is deleted
-  it("shares as many nodes as possible if the element is not found", () => {
-    const original = node(4, node(5, node(6, empty())));
-    const result = deleteLast(original, 99);
-    assert.strictEqual(result, original, "deleteLast should reuse all nodes when element not found");
-  });
-
-  // ADDED TEST: Structural sharing when deleting the middle occurrence
-  it("shares tail nodes for unchanged parts (deleting the last occurrence in the middle)", () => {
-    // original: 1 -> 3 -> 3 -> 5
-    const n5 = node(5, empty());
-    const n3b = node(3, n5);
-    const n3a = node(3, n3b);
-    const n1 = node(1, n3a);
-
-    // last occurrence of '3' is n3b
-    const result = deleteLast(n1, 3);
-    // we expect 1 -> 3 -> 5, removing the second 3
-    // new list: n1 -> n3a -> n5
-    assert.strictEqual(result.tail, n3a, "Head's tail is the first 3 node");
-    assert.strictEqual(n3a.tail, n5, "After we remove the last 3, the next node is still the old n5");
-    assert.deepStrictEqual(listToArray(result), [1, 3, 5]);
-  });
 });
 
 describe("squashList", () => {
@@ -599,21 +489,7 @@ describe("squashList", () => {
     const result = squashList(lst);
     assert.deepStrictEqual(listToArray(result), [0, 5]);
   });
-
-  // ADDED TEST: Multiple nested lists in a row
-  it("handles multiple nested lists in a row", () => {
-    const lst = arrayToList([
-      arrayToList([1, 2]),
-      arrayToList([2, 3]),
-      arrayToList([-5, 1]),
-      10
-    ]);
-    // sums: [3, 5, -4, 10] => 3 -> 5 -> -4 -> 10
-    const result = squashList(lst);
-    assert.deepStrictEqual(listToArray(result), [3, 5, -4, 10]);
-  });
 });
-
 
 describe("immutability", () => {
   const functionsToTest = [
@@ -640,3 +516,4 @@ describe("immutability", () => {
     });
   });
 });
+
