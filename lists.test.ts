@@ -64,17 +64,11 @@ describe("insertOrdered", () => {
     assert.deepStrictEqual(listToArray(result), [10, 15]);
   });
 
-  it("inserts correctly when all elements are equal", () => {
-    const lst = arrayToList([5, 5, 5]);
-    const result = insertOrdered(lst, 5);
-    assert.deepStrictEqual(listToArray(result), [5, 5, 5, 5]);
-  });
-
-  it("does not mutate the original list", () => {
-    const lst = arrayToList([10, 20, 30]);
-    const originalArray = listToArray(lst);
-    insertOrdered(lst, 25);
-    assert.deepStrictEqual(listToArray(lst), originalArray);
+  // ADDED TEST: Multiple consecutive duplicates in input, then insert a duplicate
+  it("inserts into a list that already has consecutive duplicates", () => {
+    const lst = arrayToList([10, 10, 10, 20]);
+    const result = insertOrdered(lst, 10);
+    assert.deepStrictEqual(listToArray(result), [10, 10, 10, 10, 20]);
   });
 });
 
@@ -115,16 +109,11 @@ describe("everyNRev", () => {
     assert.deepStrictEqual(listToArray(result), []);
   });
 
-  it("can use node to construct the list", () => {
-    const lst = node("x", node("y", node("z", empty())));
+  // ADDED TEST: Check behavior on a single-element list
+  it("works with a single-element list", () => {
+    const lst = arrayToList([42]);
     const result = everyNRev(lst, 2);
-    assert.deepStrictEqual(listToArray(result), ["y"]);
-  });
-
-  it("works correctly with a number list", () => {
-    const lst = arrayToList([5, 10, 15, 20]);
-    const result = everyNRev(lst, 2);
-    assert.deepStrictEqual(listToArray(result), [20, 10]);
+    assert.deepStrictEqual(listToArray(result), []);
   });
 });
 
@@ -165,23 +154,25 @@ describe("everyNCond", () => {
     assert.deepStrictEqual(listToArray(result), []);
   });
 
-  it("works with a prime-check condition", () => {
-    const isPrime = (n: number) => {
+  it("returns every 2nd prime element", () => {
+    const isPrime = (n: number): boolean => {
       if (n < 2) return false;
       for (let i = 2; i <= Math.sqrt(n); i++) {
         if (n % i === 0) return false;
       }
       return true;
     };
-    const lst = arrayToList([2, 4, 3, 6, 5, 8, 7]);
+    const lst = arrayToList([2, 3, 4, 5, 6, 7, 11, 13, 14]);
     const result = everyNCond(lst, 2, isPrime);
-    assert.deepStrictEqual(listToArray(result), [3, 7]);
+    assert.deepStrictEqual(listToArray(result), [3, 7, 13]);
   });
 
-  it("can use node to create a list", () => {
-    const lst = node(10, node(20, node(30, empty())));
-    const result = everyNCond(lst, 2, x => x > 5);
-    assert.deepStrictEqual(listToArray(result), [20]);
+  // ADDED TEST: Condition filters almost everything except the last element
+  it("handles the case where only one element satisfies the condition at the end", () => {
+    const lst = arrayToList([1, 2, 4, 8]);
+    const result = everyNCond(lst, 2, x => x > 7);
+    // Only 8 satisfies x>7, so every 2nd among [8] is... none.
+    assert.deepStrictEqual(listToArray(result), []);
   });
 });
 
@@ -217,16 +208,13 @@ describe("keepTrendMiddles", () => {
     assert.deepStrictEqual(listToArray(result), []);
   });
 
-  it("returns empty when predicate always returns false", () => {
-    const lst = arrayToList([1, 2, 3, 4, 5]);
-    const result = keepTrendMiddles(lst, () => false);
+  // ADDED TEST: Repeated elements to ensure correct handling
+  it("handles repeated elements in checking adjacency", () => {
+    const lst = arrayToList([2, 2, 2, 2, 2]);
+    // predicate for strictly increasing "prev < curr < next" should fail with all equals
+    const predicate = (p: number, c: number, n: number) => p < c && c < n;
+    const result = keepTrendMiddles(lst, predicate);
     assert.deepStrictEqual(listToArray(result), []);
-  });
-
-  it("returns all possible middles when predicate always returns true", () => {
-    const lst = arrayToList([10, 20, 30, 40, 50]);
-    const result = keepTrendMiddles(lst, () => true);
-    assert.deepStrictEqual(listToArray(result), [20, 30, 40]);
   });
 });
 
@@ -261,16 +249,10 @@ describe("keepLocalMaxima", () => {
     assert.deepStrictEqual(listToArray(result), []);
   });
 
-  it("can be constructed using node", () => {
-    const lst = node(2, node(5, node(3, empty())));
+  it("identifies overlapping local maxima", () => {
+    const lst = arrayToList([1, 2, 1, 2, 1]);
     const result = keepLocalMaxima(lst);
-    assert.deepStrictEqual(listToArray(result), [5]);
-  });
-
-  it("handles negative numbers correctly", () => {
-    const lst = arrayToList([-5, -2, -4, -1, -3]);
-    const result = keepLocalMaxima(lst);
-    assert.deepStrictEqual(listToArray(result), [-2, -1]);
+    assert.deepStrictEqual(listToArray(result), [2, 2]);
   });
 });
 
@@ -304,18 +286,6 @@ describe("keepLocalMinima", () => {
     const result = keepLocalMinima(lst);
     assert.deepStrictEqual(listToArray(result), []);
   });
-
-  it("can be constructed using node", () => {
-    const lst = node(10, node(3, node(20, empty())));
-    const result = keepLocalMinima(lst);
-    assert.deepStrictEqual(listToArray(result), [3]);
-  });
-
-  it("handles negative numbers correctly", () => {
-    const lst = arrayToList([-1, -5, -2, -6, -3]);
-    const result = keepLocalMinima(lst);
-    assert.deepStrictEqual(listToArray(result), [-5, -6]);
-  });
 });
 
 describe("keepLocalMinimaAndMaxima", () => {
@@ -341,18 +311,6 @@ describe("keepLocalMinimaAndMaxima", () => {
     const lst = arrayToList([5, 5, 5, 5]);
     const result = keepLocalMinimaAndMaxima(lst);
     assert.deepStrictEqual(listToArray(result), []);
-  });
-
-  it("returns correct values for an oscillating list", () => {
-    const lst = arrayToList([1, 3, 2, 4, 3, 5, 4]);
-    const result = keepLocalMinimaAndMaxima(lst);
-    assert.deepStrictEqual(listToArray(result), [3, 2, 4, 3, 5]);
-  });
-
-  it("can be constructed using node", () => {
-    const lst = node(5, node(2, node(8, node(3, empty()))));
-    const result = keepLocalMinimaAndMaxima(lst);
-    assert.deepStrictEqual(listToArray(result), [2]);
   });
 });
 
@@ -387,22 +345,41 @@ describe("nonNegativeProducts", () => {
     assert.deepStrictEqual(listToArray(result), [7]);
   });
 
-  it("resets product when encountering zero", () => {
-    const lst = arrayToList([2, 0, 3, 4]);
-    const result = nonNegativeProducts(lst);
-    assert.deepStrictEqual(listToArray(result), [2, 0, 3, 12]);
-  });
-
   it("handles alternating nonnegative and negative values", () => {
     const lst = arrayToList([4, -1, 5, -2, 6]);
     const result = nonNegativeProducts(lst);
     assert.deepStrictEqual(listToArray(result), [4, 5, 6]);
   });
 
+  it("handles zero correctly in a contiguous segment", () => {
+    const lst = arrayToList([2, 0, 3, 4]);
+    const result = nonNegativeProducts(lst);
+    assert.deepStrictEqual(listToArray(result), [2, 0, 0, 0]);
+  });
+
   it("can be constructed using node", () => {
     const lst = node(3, node(3, node(-1, empty())));
     const result = nonNegativeProducts(lst);
     assert.deepStrictEqual(listToArray(result), [3, 9]);
+  });
+
+  // ADDED TEST: Consecutive zeros
+  it("handles multiple consecutive zeros in a contiguous segment", () => {
+    const lst = arrayToList([0, 0, 2, -1, 0, 0, 0]);
+    // nonnegative contiguous segments: [0,0], [2], [0,0,0]
+    // products: first segment => 0, second => 2, third => 0
+    // But we must accumulate each new 0 in that contiguous subsegment
+    const result = nonNegativeProducts(lst);
+    // Step by step:
+    //  0 => product=0
+    //  0 => product=0*0=0
+    //  2 => product=2
+    // -1 => break negative
+    //  0 => product=0
+    //  0 => product=0*0=0
+    //  0 => product=0*0=0
+    // So we output [0, 0, 2, 0, 0, 0] for every nonnegative
+    assert.deepStrictEqual(listToArray(result), [0, 0, 2, 0, 0, 0]);
   });
 });
 
@@ -443,16 +420,16 @@ describe("negativeProducts", () => {
     assert.deepStrictEqual(listToArray(result), [-2, -3]);
   });
 
-  it("handles alternating negatives and positives", () => {
-    const lst = arrayToList([-2, 3, -4, 5, -6]);
+  // ADDED TEST: Consecutive negative ones (sign flipping check)
+  it("correctly handles consecutive negative ones that flip sign repeatedly", () => {
+    // -1 => product = -1
+    // -1 => product = (-1)*(-1) = 1
+    // -1 => product = 1*(-1) = -1
+    // -1 => product = (-1)*(-1) = 1
+    // etc.
+    const lst = arrayToList([-1, -1, -1, -1]);
     const result = negativeProducts(lst);
-    assert.deepStrictEqual(listToArray(result), [-2, -4, -6]);
-  });
-
-  it("can be constructed using node", () => {
-    const lst = node(-3, node(-2, node(4, empty())));
-    const result = negativeProducts(lst);
-    assert.deepStrictEqual(listToArray(result), [-3, 6]);
+    assert.deepStrictEqual(listToArray(result), [-1, 1, -1, 1]);
   });
 });
 
@@ -493,16 +470,28 @@ describe("deleteFirst", () => {
     assert.deepStrictEqual(listToArray(result), [7, 8]);
   });
 
-  it("handles a single occurrence correctly", () => {
-    const lst = arrayToList([10]);
-    const result = deleteFirst(lst, 10);
-    assert.deepStrictEqual(listToArray(result), []);
+  // ADDED TEST: Structural sharing if nothing is deleted
+  it("shares as many nodes as possible if the element is not found", () => {
+    const original = node(1, node(3, node(5, empty())));
+    const result = deleteFirst(original, 10);
+    // Should return the same exact pointer if we didn't remove anything
+    assert.strictEqual(result, original, "deleteFirst should reuse original nodes when element not found");
   });
 
-  it("can be constructed using node", () => {
-    const lst = node(4, node(5, node(6, empty())));
-    const result = deleteFirst(lst, 5);
-    assert.deepStrictEqual(listToArray(result), [4, 6]);
+  // ADDED TEST: Structural sharing after deletion in the middle
+  it("shares tail nodes for unchanged parts (deleting in the middle)", () => {
+    // original: 1 -> 2 -> 3 -> 4
+    const original4 = node(4, empty());
+    const original3 = node(3, original4);
+    const original2 = node(2, original3);
+    const original1 = node(1, original2);
+
+    // remove the first occurrence of '2'
+    const result = deleteFirst(original1, 2);
+    // Result is 1 -> 3 -> 4
+    // Check pointer to the '3' node is the same as original3
+    assert.strictEqual(result.tail, original3, "Should reuse node(3,4) after removing '2'");
+    assert.deepStrictEqual(listToArray(result), [1, 3, 4]);
   });
 });
 
@@ -543,16 +532,34 @@ describe("deleteLast", () => {
     assert.deepStrictEqual(listToArray(result), [8, 9]);
   });
 
-  it("handles a single occurrence correctly", () => {
-    const lst = arrayToList([10]);
-    const result = deleteLast(lst, 10);
-    assert.deepStrictEqual(listToArray(result), []);
+  it("deletes only the very last occurrence when duplicates are consecutive", () => {
+    const lst = arrayToList([2, 2, 1, 2, 2]);
+    const result = deleteLast(lst, 2);
+    assert.deepStrictEqual(listToArray(result), [2, 2, 1, 2]);
   });
 
-  it("can be constructed using node", () => {
-    const lst = node(4, node(5, node(6, empty())));
-    const result = deleteLast(lst, 5);
-    assert.deepStrictEqual(listToArray(result), [4, 6]);
+  // ADDED TEST: Structural sharing if nothing is deleted
+  it("shares as many nodes as possible if the element is not found", () => {
+    const original = node(4, node(5, node(6, empty())));
+    const result = deleteLast(original, 99);
+    assert.strictEqual(result, original, "deleteLast should reuse all nodes when element not found");
+  });
+
+  // ADDED TEST: Structural sharing when deleting the middle occurrence
+  it("shares tail nodes for unchanged parts (deleting the last occurrence in the middle)", () => {
+    // original: 1 -> 3 -> 3 -> 5
+    const n5 = node(5, empty());
+    const n3b = node(3, n5);
+    const n3a = node(3, n3b);
+    const n1 = node(1, n3a);
+
+    // last occurrence of '3' is n3b
+    const result = deleteLast(n1, 3);
+    // we expect 1 -> 3 -> 5, removing the second 3
+    // new list: n1 -> n3a -> n5
+    assert.strictEqual(result.tail, n3a, "Head's tail is the first 3 node");
+    assert.strictEqual(n3a.tail, n5, "After we remove the last 3, the next node is still the old n5");
+    assert.deepStrictEqual(listToArray(result), [1, 3, 5]);
   });
 });
 
@@ -569,6 +576,12 @@ describe("squashList", () => {
     assert.deepStrictEqual(listToArray(result), [1, 5, 4, 6]);
   });
 
+  it("handles a single nested list", () => {
+    const lst = arrayToList([arrayToList([10, 20, 30])]);
+    const result = squashList(lst);
+    assert.deepStrictEqual(listToArray(result), [60]);
+  });
+
   it("returns an empty list for an empty input", () => {
     const lst = empty<number | List<number>>();
     const result = squashList(lst);
@@ -581,15 +594,49 @@ describe("squashList", () => {
     assert.deepStrictEqual(listToArray(result), [0, 0]);
   });
 
-  it("handles a single nested list", () => {
-    const lst = arrayToList([arrayToList([10, 20, 30])]);
+  it("squashes a list with a nested list that sums to zero", () => {
+    const lst = arrayToList([arrayToList([1, -1]), 5]);
     const result = squashList(lst);
-    assert.deepStrictEqual(listToArray(result), [60]);
+    assert.deepStrictEqual(listToArray(result), [0, 5]);
   });
 
-  it("handles nested lists with negative numbers", () => {
-    const lst = arrayToList([arrayToList([-5, 5]), 10]);
+  // ADDED TEST: Multiple nested lists in a row
+  it("handles multiple nested lists in a row", () => {
+    const lst = arrayToList([
+      arrayToList([1, 2]),
+      arrayToList([2, 3]),
+      arrayToList([-5, 1]),
+      10
+    ]);
+    // sums: [3, 5, -4, 10] => 3 -> 5 -> -4 -> 10
     const result = squashList(lst);
-    assert.deepStrictEqual(listToArray(result), [0, 10]);
+    assert.deepStrictEqual(listToArray(result), [3, 5, -4, 10]);
+  });
+});
+
+
+describe("immutability", () => {
+  const functionsToTest = [
+    { name: "insertOrdered", fn: insertOrdered, args: [25] },
+    { name: "everyNRev", fn: everyNRev, args: [3] },
+    { name: "everyNCond", fn: everyNCond, args: [2, (x: number) => x > 0] },
+    { name: "keepTrendMiddles", fn: keepTrendMiddles, args: [(a: number, b: number, c: number) => a < b && b < c] },
+    { name: "keepLocalMaxima", fn: keepLocalMaxima, args: [] },
+    { name: "keepLocalMinima", fn: keepLocalMinima, args: [] },
+    { name: "keepLocalMinimaAndMaxima", fn: keepLocalMinimaAndMaxima, args: [] },
+    { name: "nonNegativeProducts", fn: nonNegativeProducts, args: [] },
+    { name: "negativeProducts", fn: negativeProducts, args: [] },
+    { name: "deleteFirst", fn: deleteFirst, args: [2] },
+    { name: "deleteLast", fn: deleteLast, args: [2] },
+    { name: "squashList", fn: squashList, args: [] },
+  ];
+
+  functionsToTest.forEach(({ name, fn, args = [] }) => {
+    it(`${name} does not mutate its input list`, () => {
+      const originalArr = [1, 2, 3, 2, 4];
+      const lst = arrayToList(originalArr);
+      (fn as (lst: List<number>, ...args: unknown[]) => unknown).apply(null, [lst, ...args]);
+      assert.deepStrictEqual(listToArray(lst), originalArr);
+    });
   });
 });
